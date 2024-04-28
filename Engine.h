@@ -30,6 +30,7 @@ class Engine
 	void init(const std::string& path);
 	void setPaused();
 	void screenCollision(std::shared_ptr<Entity> entity) const;
+	int genRandomInt(int min, int max) const;
 
 	void sMovement(); // System: entity pos / movemnt update
 	void sUserInput(); //user input

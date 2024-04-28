@@ -64,9 +64,16 @@ void Vec2::operator /= (const float val)
 	y /= val;
 };
 
-float Vec2::dist(const Vec2& rhs) const
+Vec2 Vec2::dist(const Vec2& rhs) const
 {
 	float dX = rhs.x - x;
 	float dY = rhs.y - y;
-	return sqrt(dX * dX + dY * dY);//slow
+	return Vec2(dX, dY);
+	//return sqrt(dX * dX + dY * dY);//slow
+};
+
+Vec2 Vec2::normalize() const
+{
+	float L = sqrtf(x * x + y * y);
+	return Vec2(x / L, y / L);//unit vector
 };

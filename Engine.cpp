@@ -106,7 +106,7 @@ void Engine::screenCollision(std::shared_ptr<Entity> entity) const
 	if ((entity->cTransform->pos.x - radius) <= 0)
 	{
 		entity->cTransform->velocity.x = entity->cTransform->velocity.x * -1;
-		entity->cTransform->pos.x = radius + 50;
+		entity->cTransform->pos.x = radius + 50;// TODO: change const in relation to size of shape
 	}
 	if ((entity->cTransform->pos.y - radius) <= 0)
 	{
@@ -147,28 +147,31 @@ void Engine::spawnPlayer()
 void Engine::spawnBullet(std::shared_ptr<Entity> creator, const Vec2& mousePos)
 {
 	auto entity = m_manager.addEntity("Bullet");
-	Vec2 vel = Vec2(0.0f, 0.0f);//TODO:
-	entity->cTransform = std::make_shared<CTransform>(Vec2(mousePos.x, mousePos.y), vel, 1.5f);
+
+	Vec2 distanceVec = creator->cTransform->pos.dist(mousePos);
+	Vec2 n = distanceVec.normalize();
+	Vec2 vel = Vec2(n.x * m_bulletConfig.S, n.y * m_bulletConfig.S);
+
+	entity->cTransform = std::make_shared<CTransform>(Vec2(creator->cTransform->pos.x, creator->cTransform->pos.y), vel, 3.0f);
 	entity->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
 	entity->cShape = std::make_shared<CShape>(m_bulletConfig.SR, m_bulletConfig.V,
 		sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
 		sf::Color(m_bulletConfig.OR, m_bulletConfig.OG, m_bulletConfig.OB), m_bulletConfig.OT);
 	entity->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L);
-	std::cout << m_bulletConfig.L;
 }
 
 void Engine::spawnEnemy()
 {
 	auto entity = m_manager.addEntity("Enemy");
 
-	//TODO: generate random location within the screen not touching the border
-	float mx = 1 + rand() % m_window.getSize().x;
-	float my = 1 + rand() % m_window.getSize().y;
+	float mx = (float) genRandomInt(0 + m_enemyConfig.SR, m_window.getSize().x - m_enemyConfig.SR);
+	float my = (float) genRandomInt(0 + m_enemyConfig.SR, m_window.getSize().y - m_enemyConfig.SR);
 
-	Vec2 vel = Vec2(0.0f, 0.0f);//TODO: generate random velocity based on SMIN and SMAX
+	Vec2 vel = Vec2(0.0f, 0.0f);//TODO: generate random velocity based on genRandomInt(m_enemyConfig.SMIN, m_enemyConfig.SMAX)
 	entity->cCollision = std::make_shared<CCollision>(m_enemyConfig.CR);
 	entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, 1.5f);
 
+	//del
 	int range[] = { 1.9f , 3 };
 	float velocity =  rand() % (range[1] - range[0]);
 	velocity = velocity + range[0];
@@ -179,8 +182,9 @@ void Engine::spawnEnemy()
 		(rand() % 2 == 0 ? velocity * -1.0f : velocity) 
 	}; 
 
-	entity->cShape = std::make_shared<CShape>(m_enemyConfig.SR, m_playerConfig.V,//TODO: generate random vertices using VMIN VMAX
-		sf::Color(m_playerConfig.FR, m_playerConfig.FG, m_playerConfig.FB),//TODO: generate random color
+	float vertices = genRandomInt(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
+	entity->cShape = std::make_shared<CShape>(m_enemyConfig.SR, vertices,
+		sf::Color(genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices)),
 		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB), m_enemyConfig.OT);
 
 	m_lastEnemySpawnTime = m_currentFrame;
@@ -316,10 +320,6 @@ void Engine::sUserInput()
 		}
 		if (event.type == sf::Event::MouseButtonPressed)
 		{
-			spawnBullet(m_player, Vec2(sf::Mouse::getPosition(m_window).x, sf::Mouse::getPosition(m_window).y));
-		}
-		if (event.type == sf::Event::MouseButtonPressed)
-		{
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
 				spawnBullet(m_player, Vec2(sf::Mouse::getPosition(m_window).x, sf::Mouse::getPosition(m_window).y));
@@ -344,6 +344,7 @@ void Engine::sCollision()
 			{
 					b->destroy();
 					e->destroy();
+					spawnSmallEnemies(e);
 			}
 		}
 
@@ -358,6 +359,7 @@ void Engine::sCollision()
 			m_player->destroy();
 			m_player.reset();
 			e->destroy();
+			//spawnSmallEnemies(e);
 		}
 	}
 	if (m_player)
@@ -379,6 +381,40 @@ void Engine::sLifespan()
 			e->destroy();
 			continue;
 		}
+		float newAlpha = 255 * ((float) e->cLifespan->remaining / (float) e->cLifespan->total);
+		
+		sf::Color color = e->cShape->circle.getFillColor();
+		e->cShape->circle.setFillColor(sf::Color(color.r, color.g, color.b, newAlpha));
+
+		color = e->cShape->circle.getOutlineColor();
+		e->cShape->circle.setOutlineColor(sf::Color(color.r, color.g, color.b, newAlpha));
+
 		e->cLifespan->remaining--;
 	}
+};
+
+void Engine::spawnSmallEnemies(std::shared_ptr<Entity> entity)
+{
+	int entityVertices = entity->cShape->circle.getPointCount();
+
+	for (int i = 0; i < entityVertices; i++)
+	{
+		//TODO: 
+		//auto e = m_manager.addEntity("SmallEnemy");
+		//e->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+		// 
+		//e->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, 1.5f);
+		//float vertices = genRandomInt(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
+		//e->cShape = std::make_shared<CShape>(m_enemyConfig.SR, vertices,
+		//	sf::Color(genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices)),
+		//	sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB), m_enemyConfig.OT);
+	}
+};
+
+int Engine::genRandomInt(int min, int max) const
+{
+	int len = max - min + 1;
+	int random = rand() % len;// [0, len - 1]
+
+	return (random + min);
 };

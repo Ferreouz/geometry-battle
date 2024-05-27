@@ -3,7 +3,10 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 #include "Vec2.h"
+#define CIRCLE_ROTATION 0.6f
+
 
 Engine::Engine(const std::string& config)
 {
@@ -48,14 +51,16 @@ void Engine::init(const std::string& path)
 		{
 			fin >> m_playerConfig.SR >> m_playerConfig.CR >> m_playerConfig.S >> m_playerConfig.FR
 				>> m_playerConfig.FG >> m_playerConfig.FB >> m_playerConfig.OR >> m_playerConfig.OG 
-				>> m_playerConfig.OB >> m_playerConfig.OT >> m_playerConfig.V >> m_playerConfig.S;
+				>> m_playerConfig.OB >> m_playerConfig.OT >> m_playerConfig.V;
 			continue;
 		}
 		if (word == "Enemy")
 		{
 			fin >> m_enemyConfig.SR >> m_enemyConfig.CR >> m_enemyConfig.SMIN >> m_enemyConfig.SMAX
-				>> m_enemyConfig.OR >> m_enemyConfig.OG >> m_enemyConfig.OT >> m_enemyConfig.VMIN
-				>> m_enemyConfig.VMAX >> m_enemyConfig.L >> m_enemyConfig.SP;
+				>> m_enemyConfig.OR >> m_enemyConfig.OG 
+				>> m_enemyConfig.OB 
+				>> m_enemyConfig.OT 
+				>> m_enemyConfig.VMIN >> m_enemyConfig.VMAX >> m_enemyConfig.L >> m_enemyConfig.SP;
 			continue;
 		}
 		if (word == "Bullet")
@@ -134,7 +139,7 @@ void Engine::spawnPlayer()
 	float my = m_window.getSize().y / 2.0f;
 
 	Vec2 vel = Vec2(0.0f, 0.0f);//TODO:
-	m_player->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, 1.5f);
+	m_player->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, CIRCLE_ROTATION + 0.1f);
 
 	m_player->cCollision = std::make_shared<CCollision>(m_playerConfig.CR);
 	m_player->cShape = std::make_shared<CShape>(m_playerConfig.SR, m_playerConfig.V,
@@ -152,7 +157,7 @@ void Engine::spawnBullet(std::shared_ptr<Entity> creator, const Vec2& mousePos)
 	Vec2 n = distanceVec.normalize();
 	Vec2 vel = Vec2(n.x * m_bulletConfig.S, n.y * m_bulletConfig.S);
 
-	entity->cTransform = std::make_shared<CTransform>(Vec2(creator->cTransform->pos.x, creator->cTransform->pos.y), vel, 3.0f);
+	entity->cTransform = std::make_shared<CTransform>(Vec2(creator->cTransform->pos.x, creator->cTransform->pos.y), vel, CIRCLE_ROTATION);
 	entity->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
 	entity->cShape = std::make_shared<CShape>(m_bulletConfig.SR, m_bulletConfig.V,
 		sf::Color(m_bulletConfig.FR, m_bulletConfig.FG, m_bulletConfig.FB),
@@ -167,20 +172,11 @@ void Engine::spawnEnemy()
 	float mx = (float) genRandomInt(0 + m_enemyConfig.SR, m_window.getSize().x - m_enemyConfig.SR);
 	float my = (float) genRandomInt(0 + m_enemyConfig.SR, m_window.getSize().y - m_enemyConfig.SR);
 
-	Vec2 vel = Vec2(0.0f, 0.0f);//TODO: generate random velocity based on genRandomInt(m_enemyConfig.SMIN, m_enemyConfig.SMAX)
+	Vec2 vel = Vec2(genRandomInt(m_enemyConfig.SMIN, m_enemyConfig.SMAX) * cos(45), genRandomInt(m_enemyConfig.SMIN, m_enemyConfig.SMAX) * sin(45));
 	entity->cCollision = std::make_shared<CCollision>(m_enemyConfig.CR);
-	entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, 1.5f);
+	entity->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, CIRCLE_ROTATION);
 
-	//del
-	int range[] = { 1.9f , 3 };
-	float velocity =  rand() % (range[1] - range[0]);
-	velocity = velocity + range[0];
-
-	entity->cTransform->velocity = 
-	{ 
-		(rand() % 2 == 0 ? velocity * -1.0f : velocity), 
-		(rand() % 2 == 0 ? velocity * -1.0f : velocity) 
-	}; 
+	entity->cTransform->velocity = 	vel;  
 
 	float vertices = genRandomInt(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
 	entity->cShape = std::make_shared<CShape>(m_enemyConfig.SR, vertices,
@@ -203,27 +199,27 @@ void Engine::sMovement()
 {
 	if (m_player && m_player->cTransform)
 	{
-		float velocity = m_playerConfig.S;
+		Vec2 vel = { (float) (m_playerConfig.S*cos(45)), (float)(m_playerConfig.S*sin(45)) };
 		m_player->cTransform->velocity = { 0, 0 };
 
 		if (m_player->cInput->up)
 		{
-			m_player->cTransform->velocity.y += velocity * -1;
+			m_player->cTransform->velocity.y += vel.y * -1;
 		}
 
 		if (m_player->cInput->down)
 		{
-			m_player->cTransform->velocity.y += velocity;
+			m_player->cTransform->velocity.y += vel.y;
 		}
 
 		if (m_player->cInput->left)
 		{
-			m_player->cTransform->velocity.x += velocity * -1;
+			m_player->cTransform->velocity.x += vel.x * -1;
 		}
 
 		if (m_player->cInput->right)
 		{
-			m_player->cTransform->velocity.x += velocity;
+			m_player->cTransform->velocity.x += vel.x;
 		}
 	}
 
@@ -378,7 +374,7 @@ void Engine::sLifespan()
 		}
 		if (e->cLifespan->remaining == 0)
 		{
-			e->destroy();
+			e->destroy();//TODO
 			continue;
 		}
 		float newAlpha = 255 * ((float) e->cLifespan->remaining / (float) e->cLifespan->total);
@@ -395,20 +391,29 @@ void Engine::sLifespan()
 
 void Engine::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 {
-	int entityVertices = entity->cShape->circle.getPointCount();
+	int eVertices = entity->cShape->circle.getPointCount();
+	sf::Color color = entity->cShape->circle.getFillColor();
+	sf::Color outline = entity->cShape->circle.getOutlineColor();
 
-	for (int i = 0; i < entityVertices; i++)
+	int angle = 360 / 4;
+	for (int i = 0; i < 4; i++)
 	{
-		//TODO: 
-		//auto e = m_manager.addEntity("SmallEnemy");
-		//e->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
-		// 
-		//e->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, 1.5f);
-		//float vertices = genRandomInt(m_enemyConfig.VMIN, m_enemyConfig.VMAX);
-		//e->cShape = std::make_shared<CShape>(m_enemyConfig.SR, vertices,
-		//	sf::Color(genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices)),
-		//	sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB), m_enemyConfig.OT);
+		auto e = m_manager.addEntity("SmallEnemy");
+		// e->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+		e->cShape = std::make_shared<CShape>(
+			m_enemyConfig.SR/2,
+			3,
+			color,
+			outline, 
+			m_enemyConfig.OT
+		);
+		Vec2 vel = { (float) (cos((double)(i*angle))), (float) (sin((double)(i*angle))) };
+		// Vec2 vel = { (float)(radius*cos(angle *  i)) / 5, (float)(radius * sin(angle * i)) / 5 };//TODO: calc angle
+		std::cout << "angle " << i*angle << " x,y: " << vel.x << vel.y << std::endl;
+		e->cTransform = std::make_shared<CTransform>(entity->cTransform->pos, vel, CIRCLE_ROTATION * 0);
 	}
+	std::cout << std::endl;
+
 };
 
 int Engine::genRandomInt(int min, int max) const

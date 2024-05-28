@@ -3,12 +3,12 @@ Window Width Heigth FPS 0ForWindow1ForFullScreen
 Font Path Size R G B
 Player ShapeRadius CollisionRadius Speed FillColorR FillColorG FillColorB OutlineColorR OutlineColorG OutlineColorB OutlineThickness ShapeVertices
 Enemy ShapeRadius CollisionRadius MinSpeed MaxSpeed OutlineColorR OutlineColorG OutlineColorB OutlineThickness MinVertices MaxVertices SmallLifespan SpawnIntervalSeconds
-Bullet ShapeRadius CollisionRadius Speed FillColorR FillColorG FillColorB OutlineColorR OutlineColorG OutlineColorB
+Bullet ShapeRadius CollisionRadius Speed FillColorR FillColorG FillColorB OutlineColorR OutlineColorG OutlineColorB OutlineThickness Vertices Lifespan
 
 
 # Example:
-Window 1920 1080 240 0
+Window 1920 1080 60 0
 Font mukta.ttf 18 255 255 255
 Player 32 32 7 10 10 10 255 0 0 6 10
-Enemy 28 28 2 6 244 250 255 3 3 3 2000 2
-Bullet 4 4 5 0 0 150 200 0 0 10 120 240
+Enemy 28 28 1 1 244 250 255 3 3 6 90 2
+Bullet 4 4 5 0 0 150 200 0 0 10 120 60

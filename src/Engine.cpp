@@ -6,6 +6,7 @@
 #include <cmath>
 #include "Vec2.h"
 #define CIRCLE_ROTATION 0.6f
+#define PI 3.14f
 
 
 Engine::Engine(const std::string& config)
@@ -84,10 +85,10 @@ void Engine::run()
 		{
 			spawnPlayer();
 		}
-		sLifespan();
 
 		if (!m_paused)
 		{
+			sLifespan();
 			sEnemySpawner();
 			sMovement();
 			sCollision();
@@ -111,12 +112,12 @@ void Engine::screenCollision(std::shared_ptr<Entity> entity) const
 	if ((entity->cTransform->pos.x - radius) <= 0)
 	{
 		entity->cTransform->velocity.x = entity->cTransform->velocity.x * -1;
-		entity->cTransform->pos.x = radius + 50;// TODO: change const in relation to size of shape
+		entity->cTransform->pos.x = radius + 50;
 	}
 	if ((entity->cTransform->pos.y - radius) <= 0)
 	{
 		entity->cTransform->velocity.y = entity->cTransform->velocity.y * -1;
-		entity->cTransform->pos.y = radius + 20;
+		entity->cTransform->pos.y = radius + 40;
 	}
 	if ((entity->cTransform->pos.x + radius) >= m_window.getSize().x)
 	{
@@ -126,8 +127,7 @@ void Engine::screenCollision(std::shared_ptr<Entity> entity) const
 	if ((entity->cTransform->pos.y + radius) >= m_window.getSize().y)
 	{
 		entity->cTransform->velocity.y = entity->cTransform->velocity.y * -1;
-		entity->cTransform->pos.y = m_window.getSize().y - (radius + 20);
-
+		entity->cTransform->pos.y = m_window.getSize().y - (radius + 40);
 	}
 }
 
@@ -138,7 +138,7 @@ void Engine::spawnPlayer()
 	float mx = m_window.getSize().x / 2.0f;
 	float my = m_window.getSize().y / 2.0f;
 
-	Vec2 vel = Vec2(0.0f, 0.0f);//TODO:
+	Vec2 vel = Vec2(0.0f, 0.0f);
 	m_player->cTransform = std::make_shared<CTransform>(Vec2(mx, my), vel, CIRCLE_ROTATION + 0.1f);
 
 	m_player->cCollision = std::make_shared<CCollision>(m_playerConfig.CR);
@@ -147,6 +147,7 @@ void Engine::spawnPlayer()
 		sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB), m_playerConfig.OT);
 
 	m_player->cInput = std::make_shared<CInput>();
+	// m_player->cSpecialWeapon = std::make_shared<CSpecialWeapon>();
 }
 
 void Engine::spawnBullet(std::shared_ptr<Entity> creator, const Vec2& mousePos)
@@ -186,6 +187,12 @@ void Engine::spawnEnemy()
 	m_lastEnemySpawnTime = m_currentFrame;
 }
 
+void Engine::spawnSpecialWeapon(std::shared_ptr<Entity> creator) 
+{
+
+	
+}
+
 void Engine::sEnemySpawner()
 {
 	int spawnPeriod = (int) (m_enemyConfig.SP * m_frameRateLimit);
@@ -199,7 +206,7 @@ void Engine::sMovement()
 {
 	if (m_player && m_player->cTransform)
 	{
-		Vec2 vel = { (float) (m_playerConfig.S*cos(45)), (float)(m_playerConfig.S*sin(45)) };
+		Vec2 vel = { (float) (m_playerConfig.S*cos(45*PI/180)), (float)(m_playerConfig.S*sin(45*PI/180)) };
 		m_player->cTransform->velocity = { 0, 0 };
 
 		if (m_player->cInput->up)
@@ -319,7 +326,11 @@ void Engine::sUserInput()
 			if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
 				spawnBullet(m_player, Vec2(sf::Mouse::getPosition(m_window).x, sf::Mouse::getPosition(m_window).y));
-			}
+			} 
+			if (sf::Mouse::isButtonPressed(sf::Mouse::Right))
+			{
+				spawnSpecialWeapon(m_player);
+			} 
 		}
 	}
 }
@@ -374,10 +385,10 @@ void Engine::sLifespan()
 		}
 		if (e->cLifespan->remaining == 0)
 		{
-			e->destroy();//TODO
+			e->destroy();
 			continue;
 		}
-		float newAlpha = 255 * ((float) e->cLifespan->remaining / (float) e->cLifespan->total);
+		float newAlpha = 255 * ((float)e->cLifespan->remaining / (float)e->cLifespan->total);
 		
 		sf::Color color = e->cShape->circle.getFillColor();
 		e->cShape->circle.setFillColor(sf::Color(color.r, color.g, color.b, newAlpha));
@@ -389,28 +400,35 @@ void Engine::sLifespan()
 	}
 };
 
+void Engine::sSpecialWeapon()
+{
+	for (auto e : m_manager.getEntities())
+	{
+		if (e->cSpecialWeapon)
+		{
+			e->cSpecialWeapon->remaningCooldown--;
+		}
+	}
+};
+
 void Engine::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 {
 	int eVertices = entity->cShape->circle.getPointCount();
-	sf::Color color = entity->cShape->circle.getFillColor();
-	sf::Color outline = entity->cShape->circle.getOutlineColor();
+	int angle = 360 / eVertices;
 
-	int angle = 360 / 4;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 360; i+=angle)
 	{
 		auto e = m_manager.addEntity("SmallEnemy");
-		// e->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+		e->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
 		e->cShape = std::make_shared<CShape>(
 			m_enemyConfig.SR/2,
-			3,
-			color,
-			outline, 
+			eVertices,
+			entity->cShape->circle.getFillColor(),
+			entity->cShape->circle.getOutlineColor(), 
 			m_enemyConfig.OT
 		);
-		Vec2 vel = { (float) (cos((double)(i*angle))), (float) (sin((double)(i*angle))) };
-		// Vec2 vel = { (float)(radius*cos(angle *  i)) / 5, (float)(radius * sin(angle * i)) / 5 };//TODO: calc angle
-		std::cout << "angle " << i*angle << " x,y: " << vel.x << vel.y << std::endl;
-		e->cTransform = std::make_shared<CTransform>(entity->cTransform->pos, vel, CIRCLE_ROTATION * 0);
+		Vec2 vel = { (float)cos(i * PI / 180), (float)sin(i * PI / 180) };
+		e->cTransform = std::make_shared<CTransform>(entity->cTransform->pos, vel, CIRCLE_ROTATION);
 	}
 	std::cout << std::endl;
 

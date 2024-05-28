@@ -38,12 +38,13 @@ class Engine
 	void sRender();
 	void sEnemySpawner();
 	void sCollision();
+	void sSpecialWeapon();
 
 	void spawnPlayer();
 	void spawnEnemy();
-	void spawnSmallEnemies(std::shared_ptr<Entity> entity);
-	void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
-	void spawnSpecialWeapon (std::shared_ptr<Entity> entity);
+    void spawnSpecialWeapon(std::shared_ptr<Entity> creator);
+    void spawnSmallEnemies(std::shared_ptr<Entity> entity);
+    void spawnBullet(std::shared_ptr<Entity> entity, const Vec2& mousePos);
 
 public:
 	Engine(const std::string& config);

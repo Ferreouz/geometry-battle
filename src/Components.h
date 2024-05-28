@@ -67,3 +67,11 @@ public:
 
 	CInput() {}
 };
+
+class CSpecialWeapon
+{
+public:
+	int remaningCooldown = 0;
+
+	CSpecialWeapon() {}
+};

@@ -6,7 +6,7 @@
 #include <SFML/Graphics.hpp>
 
 struct PlayerConfig { int SR, CR, FR, FG, FB, OR, OG, OB, OT, V; float S; }; 
-struct EnemyConfig { int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L; float SMIN, SMAX, SP	; };
+struct EnemyConfig { int SR, CR, OR, OG, OB, OT, VMIN, VMAX, L; float SMIN, SMAX, SP; };
 struct BulletConfig { int SR, CR, FR, FG, FB, OR, OG, OB, OT, V, L; float S; };
 
 class Engine
@@ -29,7 +29,7 @@ class Engine
 
 	void init(const std::string& path);
 	void setPaused();
-	void screenCollision(std::shared_ptr<Entity> entity) const;
+	void checkScreenCollision(std::shared_ptr<Entity> entity) const;
 	int genRandomInt(int min, int max) const;
 
 	void sMovement(); // System: entity pos / movemnt update
@@ -38,8 +38,9 @@ class Engine
 	void sRender();
 	void sEnemySpawner();
 	void sCollision();
-	void sSpecialWeapon();
-
+	void sSpecialWeaponCooldown();
+	
+	void spawnGrowableEntity(std::shared_ptr<Entity> creator);
 	void spawnPlayer();
 	void spawnEnemy();
     void spawnSpecialWeapon(std::shared_ptr<Entity> creator);

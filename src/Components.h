@@ -71,7 +71,23 @@ public:
 class CSpecialWeapon
 {
 public:
-	int remaningCooldown = 0;
+	int remainingCooldown = 0;
+	int cooldown = 0;
 
-	CSpecialWeapon() {}
+	CSpecialWeapon(int _cooldown): remainingCooldown(_cooldown), cooldown(_cooldown) {}
+};
+
+class CFlamming
+{
+public:
+
+	CFlamming() {}
+};
+
+class CGrowable
+{
+public:
+	float growthRate = 0;
+
+	CGrowable(float _growthRate): growthRate(_growthRate) {}
 };

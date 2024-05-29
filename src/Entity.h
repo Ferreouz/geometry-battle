@@ -23,6 +23,8 @@ public:
 	std::shared_ptr<CScore> cScore;
 	std::shared_ptr<CLifespan> cLifespan;
 	std::shared_ptr<CSpecialWeapon> cSpecialWeapon;
+	std::shared_ptr<CFlamming> cFlamming;
+	std::shared_ptr<CGrowable> cGrowable;
 
 	bool isAlive() const;
 	const std::string& type() const;

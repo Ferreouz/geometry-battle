@@ -92,6 +92,7 @@ void Engine::run()
 			sEnemySpawner();
 			sMovement();
 			sCollision();
+			sSpecialWeaponCooldown();
 		}
 		
 		sUserInput();
@@ -106,7 +107,7 @@ void Engine::setPaused()
 	m_paused = !m_paused;
 }
 
-void Engine::screenCollision(std::shared_ptr<Entity> entity) const
+void Engine::checkScreenCollision(std::shared_ptr<Entity> entity) const
 {
 	auto radius = entity->cCollision->radius;
 	if ((entity->cTransform->pos.x - radius) <= 0)
@@ -147,7 +148,7 @@ void Engine::spawnPlayer()
 		sf::Color(m_playerConfig.OR, m_playerConfig.OG, m_playerConfig.OB), m_playerConfig.OT);
 
 	m_player->cInput = std::make_shared<CInput>();
-	// m_player->cSpecialWeapon = std::make_shared<CSpecialWeapon>();
+	m_player->cSpecialWeapon = std::make_shared<CSpecialWeapon>(2400);
 }
 
 void Engine::spawnBullet(std::shared_ptr<Entity> creator, const Vec2& mousePos)
@@ -189,8 +190,32 @@ void Engine::spawnEnemy()
 
 void Engine::spawnSpecialWeapon(std::shared_ptr<Entity> creator) 
 {
+	if(!creator->cSpecialWeapon || creator->cSpecialWeapon->remainingCooldown > 0) 
+	{
+		return;
+	}
+	creator->cSpecialWeapon->remainingCooldown = creator->cSpecialWeapon->cooldown;
 
-	
+	Vec2 vel = Vec2(12*cos(72*PI/180),12*sin(72*PI/180));
+	int numberOfMeteors = genRandomInt(100, 400);
+	for (int i = 0; i < numberOfMeteors; i++)
+	{
+		auto entity = m_manager.addEntity("Bullet");
+
+		Vec2 location = {
+			genRandomInt(0, m_window.getSize().x), 
+			genRandomInt(0, m_window.getSize().y * 8) * -1
+		};
+
+		entity->cTransform = std::make_shared<CTransform>(location, vel, 0);
+		entity->cCollision = std::make_shared<CCollision>(4);
+		entity->cShape = std::make_shared<CShape>(8, 120,
+			sf::Color(255, 0, 0),
+			sf::Color(255, 0, 0), 5);
+
+		entity->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L * 2);
+		entity->cFlamming = std::make_shared<CFlamming>();
+	}
 }
 
 void Engine::sEnemySpawner()
@@ -252,10 +277,36 @@ void Engine::sRender()
 		{
 			continue;
 		}
+		
 		e->cShape->circle.setPosition(e->cTransform->pos.x, e->cTransform->pos.y);
 
-		e->cTransform->angle += e->cTransform->rotationAngle;//config
+		e->cTransform->angle += e->cTransform->rotationAngle;
 		e->cShape->circle.setRotation(e->cTransform->angle);
+
+		if(e->cFlamming) 
+		{
+			if(e->cShape->circle.getFillColor().g == 0) 
+			{
+				
+				e->cShape->circle.setFillColor(sf::Color(255,99,71,255));
+				e->cShape->circle.setOutlineColor(sf::Color(255,99,71,255));
+
+			}
+			else 
+			{
+				e->cShape->circle.setFillColor(sf::Color(255,0,0,255));
+				e->cShape->circle.setOutlineColor(sf::Color(255,0,0,255));
+			}
+		}
+
+		if(e->cGrowable) 
+		{
+			float newThickness = e->cShape->circle.getOutlineThickness() * e->cGrowable->growthRate;
+			e->cShape->circle.setOutlineThickness(newThickness);
+			e->cCollision->radius = newThickness;
+			e->cShape->circle.setRadius(e->cShape->circle.getRadius() * (e->cGrowable->growthRate - 0.007f));
+		}
+
 		m_window.draw(e->cShape->circle);
 	}
 
@@ -342,16 +393,20 @@ void Engine::sCollision()
 
 	for (auto e : enemies)
 	{
-		screenCollision(e);
+		checkScreenCollision(e);
 		for (auto b : bullets)
 		{
 			float touchingDistance = e->cCollision->radius + b->cCollision->radius;
 			Vec2 disVec = b->cTransform->pos - e->cTransform->pos;
 			if ( (disVec.x * disVec.x + disVec.y * disVec.y) <= (touchingDistance * touchingDistance) )
 			{
-					b->destroy();
-					e->destroy();
-					spawnSmallEnemies(e);
+				e->destroy();
+				b->destroy();
+				if(b->cFlamming) 
+				{
+					spawnGrowableEntity(b);
+				}
+				spawnSmallEnemies(e);
 			}
 		}
 
@@ -366,12 +421,11 @@ void Engine::sCollision()
 			m_player->destroy();
 			m_player.reset();
 			e->destroy();
-			//spawnSmallEnemies(e);
 		}
 	}
 	if (m_player)
 	{
-		screenCollision(m_player);
+		checkScreenCollision(m_player);
 	}
 };
 
@@ -400,16 +454,28 @@ void Engine::sLifespan()
 	}
 };
 
-void Engine::sSpecialWeapon()
+void Engine::sSpecialWeaponCooldown()
 {
 	for (auto e : m_manager.getEntities())
 	{
-		if (e->cSpecialWeapon)
+		if (e->cSpecialWeapon && e->cSpecialWeapon > 0)
 		{
-			e->cSpecialWeapon->remaningCooldown--;
+			e->cSpecialWeapon->remainingCooldown--;
 		}
 	}
 };
+
+void Engine::spawnGrowableEntity(std::shared_ptr<Entity> creator)
+{
+	auto entity = m_manager.addEntity("Bullet");
+	entity->cTransform = std::make_shared<CTransform>(creator->cTransform->pos, Vec2(0, 0), 0);
+	entity->cCollision = std::make_shared<CCollision>(4);
+	entity->cShape = std::make_shared<CShape>(4, 120,
+	sf::Color(0, 0, 0, 0),
+	sf::Color(255, 255, 255), 20);
+	entity->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L * 2);
+	entity->cGrowable = std::make_shared<CGrowable>(1.01f);
+}
 
 void Engine::spawnSmallEnemies(std::shared_ptr<Entity> entity)
 {

@@ -15,7 +15,5 @@ make
 ```
 
 ## TODO: 
-- New component: A special ability, with cooldown, fired by the right mouse button. Ideas:
-    - Rain of fire, with glowing rocks
-    - Killed enemies comes back as zombies
+
 - Scoring

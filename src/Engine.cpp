@@ -46,6 +46,7 @@ void Engine::init(const std::string& path)
 			m_text.setFillColor(sf::Color(r, g, b));
 			m_text.setFont(m_font);
 			m_text.setCharacterSize(size);
+			m_text.setPosition(100, 100);
 			continue;
 		}
 		if (word == "Player")
@@ -149,6 +150,7 @@ void Engine::spawnPlayer()
 
 	m_player->cInput = std::make_shared<CInput>();
 	m_player->cSpecialWeapon = std::make_shared<CSpecialWeapon>(2400);
+	m_player->cScore = std::make_shared<CScore>(-10);
 }
 
 void Engine::spawnBullet(std::shared_ptr<Entity> creator, const Vec2& mousePos)
@@ -184,6 +186,7 @@ void Engine::spawnEnemy()
 	entity->cShape = std::make_shared<CShape>(m_enemyConfig.SR, vertices,
 		sf::Color(genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices), genRandomInt(0 + vertices, 255 - vertices)),
 		sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB), m_enemyConfig.OT);
+	entity->cScore = std::make_shared<CScore>(vertices);
 
 	m_lastEnemySpawnTime = m_currentFrame;
 }
@@ -309,7 +312,8 @@ void Engine::sRender()
 
 		m_window.draw(e->cShape->circle);
 	}
-
+	m_text.setString(sf::String("POINTS " + std::to_string(m_score)));
+	m_window.draw(m_text);
 	m_window.display();
 }
 
@@ -407,6 +411,10 @@ void Engine::sCollision()
 					spawnGrowableEntity(b);
 				}
 				spawnSmallEnemies(e);
+				if(e->cScore) 
+				{
+					m_score += e->cScore->score;
+				}
 			}
 		}
 
@@ -418,6 +426,10 @@ void Engine::sCollision()
 		Vec2 disVec = m_player->cTransform->pos - e->cTransform->pos;
 		if ( (disVec.x * disVec.x + disVec.y * disVec.y) <= (touchingDistance * touchingDistance) )
 		{
+			if(m_player->cScore) 
+			{
+				m_score += m_player->cScore->score;
+			} 
 			m_player->destroy();
 			m_player.reset();
 			e->destroy();

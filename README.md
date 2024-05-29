@@ -16,4 +16,5 @@ make
 
 ## TODO: 
 
-- Scoring
+- Make a description
+- GIF of the gameplay in README and post on linkedin

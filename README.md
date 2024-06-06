@@ -24,7 +24,7 @@ sudo apt install g++ build-essential libsfml-dev
 ```bash
 git clone https://github.com/Ferreouz/geometry-battle
 cd geometry-battle
-cp config.example.txt config.txt
+cp config.example.txt config.txt && mkdir bin
 ```
 
 3. Download a font (the path is changed in the config.txt)

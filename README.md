@@ -6,10 +6,12 @@ I learned some concepts of the ECS design, for example, how to separate logic fr
 
 It was a fun and exciting experience and yet really challenging (especially the collision Math part 😅).
 
-## Gameplay
+## Gameplay and Demo
+
+![Alt text](demo.gif) / ![](demo.gif)
 
 Move your character using W-S-A-D keys, shoot enemies with the primary mouse button. With the secondary a special ability is activated (rain of fire).
-Killing enemies gives you points based on the number of verticies that they have.
+Killing enemies gives you points based on the number of verticies that they have. You lose points and special ability cooldown on dying.
 
 ## How to Install and run
 

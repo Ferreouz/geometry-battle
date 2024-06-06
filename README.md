@@ -34,7 +34,7 @@ cp config.example.txt config.txt && mkdir bin
 wget https://wisabo.com/system/uploads/font-files/5363/Mukta-Light.ttf && mv Mukta-Light.ttf mukta.ttf
 ```
 
-5. Build and run
+4. Build and run
 ```bash
 make
 ```
